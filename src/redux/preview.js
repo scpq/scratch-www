@@ -38,7 +38,8 @@ module.exports.getInitialState = () => ({
     projectStudios: [],
     curatedStudios: [],
     currentStudioIds: [],
-    moreCommentsToLoad: false
+    moreCommentsToLoad: false,
+    projectNotAvailable: false
 });
 
 module.exports.previewReducer = (state, action) => {
@@ -51,7 +52,12 @@ module.exports.previewReducer = (state, action) => {
         return module.exports.getInitialState();
     case 'SET_PROJECT_INFO':
         return Object.assign({}, state, {
-            projectInfo: action.info
+            projectInfo: action.info ? action.info : {},
+            projectNotAvailable: !action.info
+        });
+    case 'UPDATE_PROJECT_INFO':
+        return Object.assign({}, state, {
+            projectInfo: Object.assign({}, state.projectInfo, action.info)
         });
     case 'SET_REMIXES':
         return Object.assign({}, state, {
@@ -177,6 +183,11 @@ module.exports.resetProject = () => ({
 
 module.exports.setProjectInfo = info => ({
     type: 'SET_PROJECT_INFO',
+    info: info
+});
+
+module.exports.updateProjectInfo = info => ({
+    type: 'UPDATE_PROJECT_INFO',
     info: info
 });
 
@@ -309,15 +320,16 @@ module.exports.getProjectInfo = (id, token) => (dispatch => {
         Object.assign(opts, {authentication: token});
     }
     dispatch(module.exports.setFetchStatus('project', module.exports.Status.FETCHING));
-    api(opts, (err, body) => {
+    api(opts, (err, body, response) => {
         if (err) {
             dispatch(module.exports.setFetchStatus('project', module.exports.Status.ERROR));
             dispatch(module.exports.setError(err));
             return;
         }
-        if (typeof body === 'undefined') {
+        if (typeof body === 'undefined' || response.statusCode === 404) {
             dispatch(module.exports.setFetchStatus('project', module.exports.Status.ERROR));
             dispatch(module.exports.setError('No project info'));
+            dispatch(module.exports.setProjectInfo(null));
             return;
         }
         dispatch(module.exports.setFetchStatus('project', module.exports.Status.FETCHED));
@@ -764,6 +776,25 @@ module.exports.restoreComment = (projectId, commentId, topLevelCommentId, token)
         if (!topLevelCommentId) {
             dispatch(module.exports.setRepliesRestored(commentId));
         }
+    });
+});
+
+module.exports.shareProject = (projectId, token) => (dispatch => {
+    dispatch(module.exports.setFetchStatus('project', module.exports.Status.FETCHING));
+    api({
+        uri: `/proxy/projects/${projectId}/share`,
+        authentication: token,
+        withCredentials: true,
+        method: 'PUT',
+        useCsrf: true
+    }, (err, body, res) => {
+        if (err || res.statusCode !== 200) {
+            dispatch(module.exports.setFetchStatus('project', module.exports.Status.ERROR));
+            dispatch(module.exports.setError(err));
+            return;
+        }
+        dispatch(module.exports.setFetchStatus('project', module.exports.Status.FETCHED));
+        dispatch(module.exports.updateProjectInfo(body));
     });
 });
 

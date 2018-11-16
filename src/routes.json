@@ -199,7 +199,7 @@
     },
     {
         "name": "preview",
-        "pattern": "^/preview(/editor|(/\\d+(/editor|/fullscreen)?)?)?/?$",
+        "pattern": "^/preview(/editor|(/\\d+(/editor|/fullscreen)?)?)?/?(\\?.*)?$",
         "routeAlias": "/preview/?$",
         "view": "preview/preview",
         "title": "Scratch 3.0 Preview"
@@ -302,7 +302,7 @@
         "title": "LEGO WeDo 2.0"
     },
     {
-        "name": "wedo-legacy",
+        "name": "wedo2-legacy",
         "pattern": "^/wedo-legacy/?$",
         "routeAlias": "/wedo-legacy/?$",
         "view": "wedo2-legacy/wedo2",
